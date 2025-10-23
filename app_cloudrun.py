@@ -69,7 +69,7 @@ Return ONLY a valid JSON object with no additional text or formatting."""
         
         config = types.GenerateContentConfig(
             temperature=0.2,
-            max_output_tokens=512,
+            max_output_tokens=1512,
             response_mime_type="application/json",
             response_schema=types.Schema(
                 type=types.Type.OBJECT,
