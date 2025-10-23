@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Insurance Claims Analyzer - Vertex AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 50px auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        .badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-bottom: 20px;
+        }
+        .upload-section {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin: 30px 0;
+            background: #f8f9ff;
+            transition: all 0.3s;
+        }
+        .upload-section:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+        input[type="file"] {
+            margin: 20px 0;
+            padding: 10px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+            color: #667eea;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #result {
+            display: none;
+            margin-top: 30px;
+            padding: 30px;
+            background: #f8f9ff;
+            border-radius: 15px;
+            border-left: 5px solid #667eea;
+        }
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .risk-score {
+            font-size: 48px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .low-risk { color: #10b981; }
+        .medium-risk { color: #f59e0b; }
+        .high-risk { color: #ef4444; }
+        .recommendation {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        .rec-approve { background: #d1fae5; color: #065f46; }
+        .rec-review { background: #fef3c7; color: #92400e; }
+        .rec-deny { background: #fee2e2; color: #991b1b; }
+        .detail-row {
+            display: flex;
+            padding: 12px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .detail-label {
+            font-weight: bold;
+            width: 150px;
+            color: #666;
+        }
+        .detail-value {
+            flex: 1;
+            color: #333;
+        }
+        .reasoning {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border-left: 4px solid #667eea;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #999;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <span class="badge">Powered by Vertex AI Fine-Tuned Gemini</span>
+        <h1>Insurance Claims Analyzer</h1>
+        <p class="subtitle">Upload insurance claim documents for AI-powered risk assessment</p>
+        
+        <div class="upload-section">
+            <h3>Upload Claim Document</h3>
+            <input type="file" id="fileInput" accept=".pdf" />
+            <br>
+            <button onclick="analyzeFile()" id="analyzeBtn">Analyze Claim</button>
+        </div>
+        
+        <div id="loading">
+            <div class="spinner"></div>
+            <p>Analyzing claim with fine-tuned AI model...</p>
+        </div>
+        
+        <div id="result"></div>
+        
+        <div class="footer">
+            Deployed on Google Cloud Run | Fine-tuned Gemini 2.5 Flash
+        </div>
+    </div>
+
+    <script>
+        async function analyzeFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a PDF file');
+                return;
+            }
+            
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('analyzeBtn').disabled = true;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                displayResult(data);
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+            
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('analyzeBtn').disabled = false;
+        }
+        
+        function displayResult(data) {
+            const resultDiv = document.getElementById('result');
+            
+            if (data.error) {
+                resultDiv.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+                resultDiv.style.display = 'block';
+                return;
+            }
+            
+            const riskScore = data.risk_score || 0;
+            let riskClass = 'low-risk';
+            if (riskScore > 50) riskClass = 'medium-risk';
+            if (riskScore > 70) riskClass = 'high-risk';
+            
+            let recClass = 'rec-approve';
+            let recText = data.recommendation || 'UNKNOWN';
+            if (recText.includes('REVIEW')) recClass = 'rec-review';
+            if (recText.includes('DENY') || recText.includes('HIGH')) recClass = 'rec-deny';
+            
+            resultDiv.innerHTML = `
+                <div class="result-header">
+                    <h2>Analysis Results</h2>
+                </div>
+                
+                <div class="risk-score ${riskClass}">
+                    Risk Score: ${riskScore}
+                </div>
+                
+                <div class="recommendation ${recClass}">
+                    ${recText}
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-label">File:</div>
+                    <div class="detail-value">${data.filename}</div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-label">Model:</div>
+                    <div class="detail-value">${data.model || 'Fine-tuned Gemini'}</div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-label">Processed:</div>
+                    <div class="detail-value">${new Date(data.processed_at).toLocaleString()}</div>
+                </div>
+                
+                <div class="reasoning">
+                    <strong>Analysis:</strong><br>
+                    ${data.reasoning || 'No reasoning provided'}
+                </div>
+            `;
+            
+            resultDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
