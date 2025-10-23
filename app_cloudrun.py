@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO)
 ENDPOINT = "projects/451954006366/locations/us-central1/endpoints/7356989531611987968"
 
 PROJECT_ID = "gen-lang-client-0035881252"  # Your actual project ID
-LOCATION = "us-central1"
+LOCATION = "europe-west2"
 
 def extract_text_from_pdf(pdf_path):
     """Extract text from PDF file"""
