@@ -39,7 +39,13 @@ def extract_text_from_pdf(pdf_path):
 def analyze_claim(claim_text):
     """Analyze insurance claim using Gemini model"""
     try:
-        client = genai.Client(vertexai=True)
+        # 🌟 CRITICAL FIX: Explicitly set project and location for the Vertex AI client.
+        # This addresses the 'Project and location or API key must be set...' error.
+        client = genai.Client(
+            vertexai=True,
+            project="451954006366", # Your project ID
+            location="us-central1" # Location of your custom endpoint
+        )
         
         # Updated prompt to be generic for all insurance types
         prompt = f"""Analyze this insurance claim document and assess the risk level:
